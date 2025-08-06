@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像仕分け・配置ウェブアプリケーション</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>画像仕分け・配置ツール</h1>
+        <p>2つのテーマ軸を設定し、画像をドラッグ＆ドロップで直感的に整理しましょう。</p>
+    </header>
+
+    <main class="app-container">
+        <div class="controls-container">
+            <h2>設定</h2>
+            <div class="axis-setup">
+                <label for="y-axis-top">Y軸 (上):</label>
+                <input type="text" id="y-axis-top" placeholder="例: 高評価">
+                <label for="y-axis-bottom">Y軸 (下):</label>
+                <input type="text" id="y-axis-bottom" placeholder="例: 低評価">
+                <label for="x-axis-left">X軸 (左):</label>
+                <input type="text" id="x-axis-left" placeholder="例: クリエイティブ">
+                <label for="x-axis-right">X軸 (右):</label>
+                <input type="text" id="x-axis-right" placeholder="例: ロジカル">
+            </div>
+            
+             
+        </div>
+
+        <div class="workspace">
+            <div id="staging-area" class="drop-zone">
+                <h3>画像アップロード</h3>
+                <p>ここに画像をドラッグ＆ドロップするか、クリックしてファイルを選択してください。</p>
+                <input type="file" id="file-upload" multiple accept="image/jpeg, image/png, image/gif" style="display: none;">
+                <div id="thumbnail-preview" class="thumbnail-container">
+                    <!-- アップロードされた画像のサムネイルがここに表示されます -->
+                </div>
+            </div>
+
+            <div id="sorting-grid-container">
+                 <div class="grid-labels">
+                    <span id="y-axis-top-label" class="axis-label y-top">Y軸 (上)</span>
+                    <span id="y-axis-bottom-label" class="axis-label y-bottom">Y軸 (下)</span>
+                    <span id="x-axis-left-label" class="axis-label x-left">X軸 (左)</span>
+                    <span id="x-axis-right-label" class="axis-label x-right">X軸 (右)</span>
+                </div>
+                <div id="sorting-grid" class="grid">
+                    <!-- 8x8のグリッドセルがここに生成されます -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    
+
+    
+    <!-- アプリケーションのロジック -->
+    <script src="app.js"></script>
+</body>
+</html>
