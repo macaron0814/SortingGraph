@@ -50,27 +50,6 @@ window.addEventListener('load', () => {
         handleFiles(e.target.files);
     });
 
-    // --- ドラッグ＆ドロップのイベントリスナー ---
-    // ドラッグオーバー
-    stagingArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        stagingArea.classList.add('dragover');
-    });
-
-    // ドラッグリーブ
-    stagingArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        stagingArea.classList.remove('dragover');
-    });
-
-    // ドロップ
-    stagingArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        stagingArea.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        handleFiles(files);
-    });
-
     // --- ファイル処理とサムネイル表示 ---
     function handleFiles(files) {
         for (const file of files) {
@@ -83,6 +62,7 @@ window.addEventListener('load', () => {
                 img.alt = file.name;
                 img.draggable = true;
                 img.dataset.imageId = `img-${Date.now()}`;
+                // dragstartイベントは画像自体に設定
                 img.addEventListener('dragstart', handleDragStart);
                 thumbnailPreview.appendChild(img);
             }
@@ -90,39 +70,96 @@ window.addEventListener('load', () => {
         }
     }
 
-    // --- 画像のドラッグ開始 ---
+    let draggedElement = null; // ドラッグ中の要素を保持
+
     function handleDragStart(e) {
+        draggedElement = e.target; // ドラッグされた画像要素を保存
         e.dataTransfer.setData('text/plain', e.target.dataset.imageId);
+        // ドラッグ中の見た目を調整
+        setTimeout(() => {
+            draggedElement.classList.add('dragging');
+        }, 0);
     }
 
-    // --- グリッドセルへのドラッグ＆ドロップ ---
-    const gridCells = document.querySelectorAll('.grid-cell');
-
-    gridCells.forEach(cell => {
-        cell.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            cell.classList.add('dragover');
-        });
-
-        cell.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            cell.classList.remove('dragover');
-        });
-
-        cell.addEventListener('drop', (e) => {
-            e.preventDefault();
-            cell.classList.remove('dragover');
-            const imageId = e.dataTransfer.getData('text/plain');
-            const draggableElement = document.querySelector(`[data-image-id='${imageId}']`);
-            
-            // セルにすでに画像があれば、それをステージングエリアに戻す（または他のロジック）
-            if (cell.firstChild) {
-                thumbnailPreview.appendChild(cell.firstChild);
-            }
-            cell.appendChild(draggableElement);
-        });
+    // ドラッグ終了時の処理（ドロップ成功・失敗問わず）
+    document.addEventListener('dragend', () => {
+        if (draggedElement) {
+            draggedElement.classList.remove('dragging');
+            draggedElement = null;
+        }
     });
 
-    
+    // --- イベントデリゲーションを使用してコンテナ全体でイベントを処理 ---
+    const workspace = document.querySelector('.workspace');
 
+    workspace.addEventListener('dragover', (e) => {
+        e.preventDefault(); // ドロップを許可するために必須
+        const targetCell = getDropTargetCell(e.target);
+        if (targetCell) {
+            // すべてのセルのハイライトを一旦解除
+            document.querySelectorAll('.dragover').forEach(el => el.classList.remove('dragover'));
+            targetCell.classList.add('dragover');
+        }
+    });
+
+    workspace.addEventListener('dragleave', (e) => {
+        const targetCell = getDropTargetCell(e.target);
+        if (targetCell) {
+            targetCell.classList.remove('dragover');
+        }
+    });
+
+    workspace.addEventListener('drop', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.dragover').forEach(el => el.classList.remove('dragover'));
+
+        if (!draggedElement) return;
+
+        const dropTarget = getDropTarget(e.target);
+
+        if (!dropTarget) return;
+
+        const sourceParent = draggedElement.parentElement;
+        const targetElement = dropTarget.firstElementChild;
+
+        // 自分自身へのドロップは無視
+        if (sourceParent === dropTarget) return;
+
+        // ドロップ先がステージングエリアの場合
+        if (dropTarget.id === 'thumbnail-preview') {
+            dropTarget.appendChild(draggedElement);
+            return;
+        }
+
+        // ドロップ先がグリッドセルの場合
+        if (dropTarget.classList.contains('grid-cell')) {
+            // ドロップ先に既に画像がある場合（スワップ）
+            if (targetElement) {
+                sourceParent.appendChild(targetElement);
+            }
+            dropTarget.appendChild(draggedElement);
+        }
+    });
+
+    // ドロップ先のセルまたはステージングエリアを取得するヘルパー関数
+    function getDropTarget(element) {
+        if (element.classList.contains('grid-cell') || element.id === 'thumbnail-preview') {
+            return element;
+        }
+        // 画像の上にドロップされた場合は、親のセル/エリアを返す
+        return element.closest('.grid-cell, #thumbnail-preview');
+    }
+    
+    // dragover/dragleave用のヘルパー関数
+    function getDropTargetCell(element) {
+        return element.closest('.grid-cell, #thumbnail-preview');
+    }
+
+    // ファイルドロップ用のリスナーをステージングエリアに別途設定
+    stagingArea.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFiles(files);
+        }
+    });
 });
